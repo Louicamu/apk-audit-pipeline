@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1A1B2F"/>
+      <stop offset="100%" stop-color="#232440"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF9900"/>
+      <stop offset="100%" stop-color="#FF7700"/>
+    </linearGradient>
+    <linearGradient id="lens" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#E0E0FF" stop-opacity="0.85"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="248" fill="url(#bg)" stroke="#2A2B42" stroke-width="8"/>
+
+  <!-- Circuit board decoration (subtle) -->
+  <g opacity="0.08" stroke="#FF9900" stroke-width="1.5" fill="none">
+    <path d="M80 200h40v30h-40z"/>
+    <path d="M140 200h20v30h-20z"/>
+    <circle cx="130" cy="185" r="3"/>
+    <circle cx="130" cy="245" r="3"/>
+    <path d="M392 300h40v30h-40z"/>
+    <path d="M352 300h20v30h-20z"/>
+    <circle cx="382" cy="285" r="3"/>
+    <circle cx="382" cy="345" r="3"/>
+  </g>
+
+  <!-- Shield shape -->
+  <path d="M256 60 L380 110 L380 260 C380 340 320 400 256 440 C192 400 132 340 132 260 L132 110 Z"
+        fill="url(#shield)" stroke="#E68A00" stroke-width="4" filter="url(#glow)"/>
+
+  <!-- Shield inner dark panel -->
+  <path d="M256 85 L360 125 L360 260 C360 325 312 375 256 410 C200 375 152 325 152 260 L152 125 Z"
+        fill="#1A1B2F" opacity="0.9"/>
+
+  <!-- Android robot head (stylized) inside shield -->
+  <g transform="translate(256, 240)" fill="none" stroke="#FF9900" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Antenna left -->
+    <line x1="-20" y1="-55" x2="-32" y2="-85"/>
+    <circle cx="-32" cy="-88" r="4" fill="#FF9900"/>
+
+    <!-- Antenna right -->
+    <line x1="20" y1="-55" x2="32" y2="-85"/>
+    <circle cx="32" cy="-88" r="4" fill="#FF9900"/>
+
+    <!-- Head (rounded rectangle) -->
+    <rect x="-35" y="-55" width="70" height="50" rx="10" fill="#1A1B2F" stroke="#FF9900" stroke-width="3.5"/>
+
+    <!-- Eyes -->
+    <circle cx="-12" cy="-35" r="6" fill="#FF9900"/>
+    <circle cx="12" cy="-35" r="6" fill="#FF9900"/>
+
+    <!-- Body -->
+    <rect x="-30" y="0" width="60" height="55" rx="8" fill="#1A1B2F" stroke="#FF9900" stroke-width="3.5"/>
+  </g>
+
+  <!-- Magnifying glass overlay (lower right of shield) -->
+  <g transform="translate(315, 310)">
+    <!-- Glass circle -->
+    <circle cx="0" cy="0" r="35" fill="url(#lens)" stroke="#FF9900" stroke-width="4" opacity="0.9"/>
+    <!-- Handle -->
+    <line x1="25" y1="25" x2="50" y2="50" stroke="#FF9900" stroke-width="7" stroke-linecap="round"/>
+    <!-- Lens reflection -->
+    <path d="M-15 -10 Q-5 -25 10 -10" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.6"/>
+  </g>
+
+  <!-- Scan lines inside magnifying glass -->
+  <g transform="translate(315, 310)" stroke="#FF9900" stroke-width="1.5" opacity="0.4">
+    <line x1="-18" y1="-8" x2="18" y2="-8"/>
+    <line x1="-20" y1="0" x2="20" y2="0"/>
+    <line x1="-18" y1="8" x2="18" y2="8"/>
+    <line x1="-12" y1="16" x2="12" y2="16"/>
+    <!-- Highlight matching pattern -->
+    <rect x="-10" y="-10" width="6" height="4" rx="1" fill="#FF9900" opacity="0.8"/>
+    <rect x="4" y="6" width="8" height="4" rx="1" fill="#FF9900" opacity="0.8"/>
+  </g>
+
+  <!-- Text: DROID below shield -->
+  <text x="256" y="490" text-anchor="middle" font-family="'Segoe UI', Arial, sans-serif"
+        font-size="36" font-weight="800" letter-spacing="8" fill="#FF9900">
+    DROID<tspan fill="#6B6B8A">SENTINEL</tspan>
+  </text>
+</svg>
