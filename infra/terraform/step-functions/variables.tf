@@ -1,0 +1,13 @@
+variable "project_name" { type = string }
+variable "environment" { type = string }
+variable "ecs_cluster_arn" { type = string }
+variable "jadx_task_def_arn" { type = string }
+variable "mobsf_task_def_arn" { type = string }
+variable "parse_lambda_arn" { type = string }
+variable "save_report_lambda_arn" { type = string }
+variable "ecs_tasks_sg_id" { type = string }
+variable "private_subnet_ids" { type = list(string) }
+variable "apk_uploads_bucket_id" { type = string }
+variable "audit_reports_bucket_id" { type = string }
+variable "sns_critical_topic_arn" { type = string }
+variable "step_functions_role_arn" { type = string }

@@ -1,0 +1,180 @@
+{
+  "Comment": "APK Security Audit Pipeline — jadx decompile → MobSF scan → parse → store",
+  "StartAt": "Run Jadx Decompilation",
+  "TimeoutSeconds": 3600,
+  "States": {
+    "Run Jadx Decompilation": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "${ecs_cluster_arn}",
+        "TaskDefinition": "${jadx_task_def_arn}",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": ["${private_subnet_0}", "${private_subnet_1}"],
+            "SecurityGroups": ["${ecs_tasks_sg_id}"],
+            "AssignPublicIp": "DISABLED"
+          }
+        },
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "jadx",
+              "Environment": [
+                { "Name": "S3_BUCKET", "Value.$": "$.detail.bucket.name" },
+                { "Name": "S3_KEY", "Value.$": "$.detail.object.key" },
+                { "Name": "REPORTS_BUCKET", "Value": "${audit_reports_bucket}" },
+                { "Name": "JOB_ID", "Value.$": "$$.Execution.Id" },
+                { "Name": "OTEL_SERVICE_NAME", "Value": "apk-jadx" }
+              ]
+            }
+          ]
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["ECS.AmazonECSException", "States.TaskFailed"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 2,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "HandleFailure"
+        }
+      ],
+      "ResultPath": "$.jadxResult",
+      "Next": "Run MobSF Scan"
+    },
+    "Run MobSF Scan": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "${ecs_cluster_arn}",
+        "TaskDefinition": "${mobsf_task_def_arn}",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": ["${private_subnet_0}", "${private_subnet_1}"],
+            "SecurityGroups": ["${ecs_tasks_sg_id}"],
+            "AssignPublicIp": "DISABLED"
+          }
+        },
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "mobsf",
+              "Environment": [
+                { "Name": "REPORTS_BUCKET", "Value": "${audit_reports_bucket}" },
+                { "Name": "JOB_ID", "Value.$": "$$.Execution.Id" },
+                { "Name": "OTEL_SERVICE_NAME", "Value": "apk-mobsf" }
+              ]
+            }
+          ]
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["ECS.AmazonECSException", "States.TaskFailed"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 2,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "HandleFailure"
+        }
+      ],
+      "ResultPath": "$.mobsfResult",
+      "Next": "Parse Findings and Write to DynamoDB"
+    },
+    "Parse Findings and Write to DynamoDB": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${parse_lambda_arn}",
+        "Payload": {
+          "reportsBucket": "${audit_reports_bucket}",
+          "jobId.$": "$$.Execution.Id",
+          "apkBucket.$": "$.detail.bucket.name",
+          "apkKey.$": "$.detail.object.key",
+          "executionArn.$": "$$.Execution.Id"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException"],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "HandleFailure"
+        }
+      ],
+      "ResultPath": "$.parseResult",
+      "Next": "Critical Findings Check"
+    },
+    "Critical Findings Check": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.parseResult.Payload.hasCritical",
+          "BooleanEquals": true,
+          "Next": "Notify Critical Findings"
+        }
+      ],
+      "Default": "Save Final Report"
+    },
+    "Notify Critical Findings": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${sns_critical_topic_arn}",
+        "Message.$": "States.Format('Critical findings detected in APK audit.\n\nExecution: {}\nAPK: {}\nCritical Count: {}\nFindings Count: {}\nReport: s3://{}/final-reports/{}.json', $$.Execution.Id, $.detail.object.key, States.JsonToString($.parseResult.Payload.criticalCount), States.JsonToString($.parseResult.Payload.findingsCount), '${audit_reports_bucket}', $$.Execution.Id)",
+        "Subject.$": "States.Format('[CRITICAL] APK Audit — {} Critical Findings', States.JsonToString($.parseResult.Payload.criticalCount))"
+      },
+      "Next": "Save Final Report"
+    },
+    "Save Final Report": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${save_report_lambda_arn}",
+        "Payload": {
+          "reportsBucket": "${audit_reports_bucket}",
+          "jobId.$": "$$.Execution.Id",
+          "apkKey.$": "$.detail.object.key",
+          "findings.$": "$.parseResult.Payload",
+          "executionArn.$": "$$.Execution.Id"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException"],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 2,
+          "BackoffRate": 2.0
+        }
+      ],
+      "ResultPath": "$.reportResult",
+      "End": true
+    },
+    "HandleFailure": {
+      "Type": "Fail",
+      "Cause": "Pipeline step failed — check CloudWatch logs for details",
+      "Error": "PipelineExecutionFailed"
+    }
+  }
+}

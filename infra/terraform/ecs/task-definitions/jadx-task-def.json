@@ -1,0 +1,48 @@
+[
+  {
+    "name": "jadx",
+    "image": "${ecr_repo_url}:${app_image_tag}",
+    "essential": true,
+    "cpu": 0,
+    "memoryReservation": 3072,
+    "dependsOn": [
+      {
+        "containerName": "otel-sidecar",
+        "condition": "START"
+      }
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "${log_group_jadx}",
+        "awslogs-region": "${log_region}",
+        "awslogs-stream-prefix": "jadx"
+      }
+    },
+    "environment": [
+      { "name": "AWS_REGION", "value": "${log_region}" },
+      { "name": "OTEL_EXPORTER_OTLP_ENDPOINT", "value": "http://localhost:4317" },
+      { "name": "OTEL_SERVICE_NAME", "value": "apk-jadx" }
+    ]
+  },
+  {
+    "name": "otel-sidecar",
+    "image": "${otel_repo_url}:${otel_image_tag}",
+    "essential": false,
+    "cpu": 0,
+    "memoryReservation": 256,
+    "command": ["--config=env:OTEL_CONFIG"],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "${log_group_otel}",
+        "awslogs-region": "${log_region}",
+        "awslogs-stream-prefix": "otel-sidecar"
+      }
+    },
+    "environment": [
+      { "name": "OTEL_CONFIG", "value": "${otel_config}" },
+      { "name": "AWS_REGION", "value": "${log_region}" }
+    ]
+  }
+]

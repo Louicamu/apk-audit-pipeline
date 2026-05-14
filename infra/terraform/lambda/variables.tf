@@ -1,0 +1,10 @@
+variable "project_name" { type = string }
+variable "environment" { type = string }
+variable "audit_reports_bucket_arn" { type = string }
+variable "audit_reports_bucket_id" { type = string }
+variable "findings_table_name" { type = string }
+variable "findings_table_arn" { type = string }
+variable "kms_key_arn" { type = string }
+variable "lambda_role_arn" { type = string }
+variable "subnet_ids" { type = list(string) }
+variable "security_group_id" { type = string }

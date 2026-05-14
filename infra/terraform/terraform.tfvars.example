@@ -1,0 +1,17 @@
+project_name    = "apk-audit"
+environment     = "prod"
+aws_region      = "us-east-1"
+alarm_email     = "security-team@example.com"
+
+# Increase these for faster APK processing
+jadx_cpu    = 1024
+jadx_memory = 4096
+mobsf_cpu   = 2048
+mobsf_memory = 8192
+
+# Retention
+s3_expiration_days = 90
+log_retention_days = 7
+
+# Cost optimization
+enable_spot = true
